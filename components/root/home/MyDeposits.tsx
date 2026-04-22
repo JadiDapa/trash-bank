@@ -1,5 +1,7 @@
+"use client";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
 import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { DepositType } from "@/servers/validators/deposit.validator";
 import { ChevronRight, Recycle } from "lucide-react";
 import Link from "next/link";
@@ -14,7 +16,6 @@ const trashStyles = {
 export default function MyDeposits({ deposits }: { deposits: DepositType[] }) {
   return (
     <main className="mt-2 space-y-3 py-3">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium">Setoran Terbaru</p>
         <Link
@@ -26,14 +27,10 @@ export default function MyDeposits({ deposits }: { deposits: DepositType[] }) {
         </Link>
       </div>
 
-      {/* Scroll */}
-      <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex w-max gap-3">
-          {deposits.map((dp) => (
-            <Card
-              key={dp.id}
-              className="w-56 gap-1 rounded-2xl border p-3 shadow-sm transition hover:shadow-md"
-            >
+      <Swiper spaceBetween={12} slidesPerView={1.5} className="-mx-4 px-4">
+        {deposits.map((dp) => (
+          <SwiperSlide key={dp.id} className="w-24">
+            <Card className="gap-1 rounded-2xl border p-3 shadow-sm transition hover:shadow-md">
               {/* Top: Type */}
               <div className="flex items-center justify-between">
                 <div
@@ -42,7 +39,6 @@ export default function MyDeposits({ deposits }: { deposits: DepositType[] }) {
                   <Recycle className="size-3" />
                   {dp.trashType}
                 </div>
-
                 <span className="text-muted-foreground text-xs">
                   {new Date(dp.createdAt).toLocaleDateString()}
                 </span>
@@ -63,9 +59,9 @@ export default function MyDeposits({ deposits }: { deposits: DepositType[] }) {
                 </p>
               )}
             </Card>
-          ))}
-        </div>
-      </ScrollArea>
+          </SwiperSlide>
+        ))}{" "}
+      </Swiper>
     </main>
   );
 }

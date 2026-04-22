@@ -17,6 +17,8 @@ export async function getCurrentUser() {
     redirect("/sign-in");
   }
 
+  console.log(clerkUser.username);
+
   const user = await UserService.getByUsername(clerkUser.username);
 
   if (!user) {
@@ -31,6 +33,8 @@ export async function createUser(input: z.input<typeof CreateUserSchema>) {
     username: input.username,
     role: input.role,
     name: input.name,
+    phoneNumber: input.phoneNumber,
+    address: input.address,
   });
 
   await UserService.create(data);

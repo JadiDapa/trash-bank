@@ -7,14 +7,14 @@ export default async function ExchangeHistoryPage() {
   const exchanges = await PointExchangeService.getAll();
   const user = await getCurrentUser();
   return (
-    <main className="bg-card min-h-screen w-full space-y-8 border p-4 md:rounded-2xl lg:p-6">
+    <main className="bg-card min-h-screen w-full space-y-8 p-4 md:rounded-2xl md:border lg:p-6">
       <h1 className="text-center text-3xl font-semibold">RIWAYAT TRANSAKSI</h1>
       <div className="">
         {exchanges.map((ex) => (
           <ExchangePointCard key={ex.id} exchange={ex} />
         ))}
       </div>
-      <ExchangePoint userId={user.id} />
+      <ExchangePoint myGrammage={user.grammage} userId={user.id} />
     </main>
   );
 }

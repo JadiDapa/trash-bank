@@ -42,12 +42,12 @@ export default function SignInForm() {
 
       try {
         const { error } = await signIn.password({
-          identifier: values.username, // atau emailAddress kalau pakai email
+          identifier: values.username,
           password: values.password,
         });
 
         if (error) {
-          toast.error("Kombinasi salah");
+          toast.error(error?.message || "Kombinasi salah");
           console.error(error);
           return;
         }
@@ -82,9 +82,15 @@ export default function SignInForm() {
                 <InputGroup className="h-12">
                   <InputGroupInput
                     {...field}
-                    className="ml-2"
+                    value={field.value || ""}
+                    onChange={(e) =>
+                      field.onChange(e.target.value.toLowerCase())
+                    }
                     placeholder="Username"
-                    autoComplete="off"
+                    className="ml-2 lowercase"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                   />
                   <InputGroupAddon>
                     <User />

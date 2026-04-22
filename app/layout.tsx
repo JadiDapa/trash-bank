@@ -25,7 +25,7 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body suppressHydrationWarning className={`${poppins.className}`}>
-        <Toaster richColors position="top-right" theme="dark" />
+        <Toaster richColors position="top-center" theme="dark" />
         <Providers>
           <main>{children}</main>
         </Providers>

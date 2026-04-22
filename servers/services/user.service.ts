@@ -58,6 +58,11 @@ export const UserService = {
     };
   },
 
+  async getAll() {
+    const users = await prisma.user.findMany();
+    return users;
+  },
+
   async getById(id: number) {
     const user = await prisma.user.findUnique({
       where: { id },
@@ -88,6 +93,8 @@ export const UserService = {
         username: data.username,
         role: data.role,
         name: data.name,
+        phoneNumber: data.phoneNumber,
+        address: data.address,
       },
     });
   },

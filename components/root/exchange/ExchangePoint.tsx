@@ -5,15 +5,22 @@ import { z } from "zod";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/field";
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 
-import { Card } from "@/components/ui/card";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+
 import { CreatePointExchangeSchema } from "@/servers/validators/point-exchange.validator";
 import { createPointExchange } from "@/app/action/point-exchage";
+
 import { Plus } from "lucide-react";
 
 type ExchangeFormType = z.infer<typeof CreatePointExchangeSchema>;
@@ -25,8 +32,8 @@ export default function ExchangePoint({
   userId: number;
   myGrammage: number;
 }) {
-  const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
 
   const form = useForm<ExchangeFormType>({
     resolver: zodResolver(CreatePointExchangeSchema),
@@ -35,15 +42,21 @@ export default function ExchangePoint({
       grammage: 0,
       points: 0,
     },
+    mode: "onChange",
   });
 
   async function onSubmit(values: ExchangeFormType) {
     startTransition(async () => {
       try {
-        await createPointExchange({
-          ...values,
-        });
+        await createPointExchange(values);
         toast.success("Ticket created!");
+
+        form.reset({
+          userId,
+          grammage: 0,
+          points: 0,
+        });
+
         setOpen(false);
       } catch {
         toast.error("Something went wrong");
@@ -56,6 +69,7 @@ export default function ExchangePoint({
   const grammage = useWatch({ control: form.control, name: "grammage" });
   const points = useWatch({ control: form.control, name: "points" });
 
+  // Grammage → Points
   useEffect(() => {
     if (lastChanged.current === "grammage") {
       const converted = grammage / 100;
@@ -65,7 +79,7 @@ export default function ExchangePoint({
     }
   }, [grammage]);
 
-  // Update grammage kalau points berubah
+  // Points → Grammage
   useEffect(() => {
     if (lastChanged.current === "points") {
       const converted = points * 100;
@@ -76,82 +90,100 @@ export default function ExchangePoint({
   }, [points]);
 
   return (
-    <Card className="bg-primary text-card fixed right-0 bottom-0 left-0 w-full rounded-t-2xl border-t p-3 shadow-xl sm:left-1/2 sm:max-w-sm sm:-translate-x-1/2">
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col">
-            <p className="text-sm font-semibold">Tukar Poin</p>
-            <p className="text-secondary text-xs">
-              Gramasi : <span className="font-semibold">{myGrammage}</span>
+    <Drawer open={open} onOpenChange={setOpen}>
+      {/* FLOATING BUTTON */}
+      <DrawerTrigger
+        asChild
+        className="fixed bottom-0 left-1/2 z-50 max-w-sm -translate-x-1/2 overflow-hidden"
+      >
+        <div className="bg-primary w-full cursor-pointer p-2">
+          <button className="bg-muted flex h-12 w-full items-center justify-center gap-2 rounded-full px-4 py-3 transition hover:scale-[1.02] active:scale-[0.98]">
+            <Plus className="size-5" />
+            <span className="text-sm font-medium">Tukar</span>
+          </button>
+        </div>
+      </DrawerTrigger>
+
+      {/* DRAWER */}
+      <DrawerContent>
+        <div className="mx-auto w-full max-w-sm p-4">
+          <DrawerHeader>
+            <DrawerTitle>Tukar Poin</DrawerTitle>
+            <p className="text-muted-foreground text-xs">
+              Gramasi: <span className="font-semibold">{myGrammage}</span>
             </p>
-          </div>
-          <p className="text-card font-medium">100g = 1 poin</p>
+          </DrawerHeader>
+
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <p className="text-right text-xs">100g = 1 poin</p>
+
+            {/* INPUTS */}
+            <div className="flex items-end gap-2">
+              {/* Grammage */}
+              <Controller
+                name="grammage"
+                control={form.control}
+                render={({ field }) => (
+                  <div className="flex-1">
+                    <FieldLabel className="text-xs">Gram</FieldLabel>
+                    <InputGroup>
+                      <InputGroupInput
+                        {...field}
+                        type="number"
+                        placeholder="0"
+                        onChange={(e) => {
+                          lastChanged.current = "grammage";
+                          field.onChange(Number(e.target.value));
+                        }}
+                      />
+                    </InputGroup>
+                  </div>
+                )}
+              />
+
+              {/* Points */}
+              <Controller
+                name="points"
+                control={form.control}
+                render={({ field }) => (
+                  <div className="w-24">
+                    <FieldLabel className="text-xs">Poin</FieldLabel>
+                    <InputGroup>
+                      <InputGroupInput
+                        {...field}
+                        type="number"
+                        placeholder="0"
+                        onChange={(e) => {
+                          lastChanged.current = "points";
+                          field.onChange(Number(e.target.value));
+                        }}
+                      />
+                    </InputGroup>
+                  </div>
+                )}
+              />
+            </div>
+
+            {/* SUBMIT BUTTON */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isPending || !form.formState.isValid}
+                className="bg-primary text-primary-foreground flex h-11 w-full items-center justify-center gap-2 rounded-lg text-sm font-medium transition hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isPending ? (
+                  <Spinner className="size-4" />
+                ) : (
+                  <>
+                    <Plus className="size-4" />
+                    Tukar Poin
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
-
-        {/* Inputs */}
-        <div className="flex items-end gap-2">
-          {/* Grammage */}
-          <Controller
-            name="grammage"
-            control={form.control}
-            render={({ field }) => (
-              <div className="flex-1">
-                <FieldLabel className="text-xs">Gram</FieldLabel>
-                <InputGroup className="bg-card border-muted">
-                  <InputGroupInput
-                    {...field}
-                    type="number"
-                    className="text-foreground h-8 text-sm"
-                    onChange={(e) => {
-                      lastChanged.current = "grammage";
-                      field.onChange(Number(e.target.value));
-                    }}
-                    placeholder="0"
-                  />
-                </InputGroup>
-              </div>
-            )}
-          />
-
-          {/* Points */}
-          <Controller
-            name="points"
-            control={form.control}
-            render={({ field }) => (
-              <div className="w-20">
-                <FieldLabel className="text-xs">Poin</FieldLabel>
-                <InputGroup className="bg-card border-muted">
-                  <InputGroupInput
-                    {...field}
-                    type="number"
-                    className="text-foreground h-8 text-sm"
-                    onChange={(e) => {
-                      lastChanged.current = "points";
-                      field.onChange(Number(e.target.value));
-                    }}
-                    placeholder="0"
-                  />
-                </InputGroup>
-              </div>
-            )}
-          />
-
-          {/* Button */}
-          <Button
-            type="submit"
-            size="sm"
-            className="bg-card h-9 px-3"
-            disabled={isPending || !form.formState.isValid}
-          >
-            {isPending ? (
-              <Spinner className="text-primary size-4" />
-            ) : (
-              <Plus className="text-primary size-4" />
-            )}
-          </Button>
-        </div>
-      </form>
-    </Card>
+      </DrawerContent>
+    </Drawer>
   );
 }

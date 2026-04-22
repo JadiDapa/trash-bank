@@ -1,15 +1,16 @@
 import { getCurrentUser } from "@/app/action/user.actions";
-import AddEducation from "@/components/root/education/AddEducation";
-import EducationCard from "@/components/root/education/EducationCard";
+import UserCard from "@/components/root/user/UserCard";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { EducationService } from "@/servers/services/education.service";
+import { UserService } from "@/servers/services/user.service";
 import { ChevronLeft, Search, Settings2, Upload } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
-export default async function EducationPage() {
+export default async function UserPage() {
   const user = await getCurrentUser();
-  const educations = await EducationService.getAll();
+  if (user.role !== "ADMIN") return redirect("/");
+  const users = await UserService.getAll();
   return (
     <ScrollArea className="bg-background h-screen w-full space-y-4 md:rounded-2xl md:border">
       <div className="w-full space-y-2">
@@ -19,7 +20,7 @@ export default async function EducationPage() {
               <Link href="/">
                 <ChevronLeft className="size-5" />
               </Link>
-              <h1 className="text-center font-medium">Setor Sampah</h1>
+              <h1 className="text-center font-medium">Daftar Pengguna</h1>
             </div>
             <Upload className="size-5" />
           </div>
@@ -35,14 +36,14 @@ export default async function EducationPage() {
         </div>
         <div className="flex flex-wrap gap-3 p-3">
           <div className="flex w-full items-center justify-between">
-            <p className="text-sm font-medium">Edukasi:</p>
+            <p className="text-sm font-medium">Total Pengguna:</p>
+            <p className="font-semibold">{users.length}</p>
           </div>
-          {educations.map((dp) => (
-            <EducationCard key={dp.id} education={dp} />
+          {users.map((dp) => (
+            <UserCard key={dp.id} user={dp} />
           ))}
         </div>
       </div>
-      <AddEducation userId={user.id} />
     </ScrollArea>
   );
 }

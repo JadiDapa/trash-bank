@@ -11,7 +11,7 @@ export default async function ExchangePage() {
   const user = await getCurrentUser();
   const exchanges = await PointExchangeService.getByUserId(user.id);
   return (
-    <ScrollArea className="bg-background relative h-[98vh] w-full space-y-4 border md:rounded-2xl">
+    <ScrollArea className="bg-background relative h-screen w-full space-y-4 md:rounded-2xl md:border">
       <div className="w-full space-y-2">
         <div className="bg-primary flex flex-col gap-4 px-3 py-6">
           <div className="flex items-center justify-between">

@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { PointExchange } from "@/generated/prisma";
+import { format } from "date-fns";
 import { ArrowRight } from "lucide-react";
 
 export default function ExchangePointCard({
@@ -13,7 +14,7 @@ export default function ExchangePointCard({
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium">Penukaran Poin</p>
         <p className="text-muted-foreground text-xs">
-          {exchange.createdAt.toLocaleDateString()}
+          {format(exchange.createdAt, "dd MMMM yyyy")}
         </p>
       </div>
 

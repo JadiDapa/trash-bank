@@ -18,6 +18,8 @@ const UserBaseSchema = z.object({
   name: z.string().min(1),
   username: z.string().min(1),
   role: z.enum(UserRole),
+  phoneNumber: z.string().optional(),
+  address: z.string().optional(),
 });
 
 export const CreateUserSchema = UserBaseSchema;
