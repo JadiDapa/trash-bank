@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Remove-Item \"C:\\\\Users\\\\daffa\\\\Documents\\\\Codes\\\\Projects\\\\trash-bank\\\\proxy.ts\")",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(npm install *)",
+      "Bash(node -e \"require\\('react-qr-code'\\)\")",
+      "Bash(npx prisma *)"
+    ]
+  }
+}

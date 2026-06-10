@@ -2,301 +2,290 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useClerk, useSignUp } from "@clerk/nextjs";
+import { useSignIn } from "@clerk/nextjs";
 import { toast } from "sonner";
-import {
-  Eye,
-  EyeClosed,
-  Lock,
-  User,
-  IdCard,
-  Phone,
-  MapPin,
-} from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { Field, FieldGroup } from "@/components/ui/field";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import { Spinner } from "@/components/ui/spinner";
-
 import { z } from "zod";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createUser } from "@/app/action/user.actions";
-import { CreateUserSchema } from "@/servers/validators/user.validator";
+import { Eye, EyeOff, UploadCloud, CheckCircle2 } from "lucide-react";
+import { RegisterMasyarakatSchema } from "@/servers/validators/masyarakat.validator";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const SignUpSchema = CreateUserSchema.extend({
-  password: z.string().min(6, "Password minimal 6 karakter"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Password tidak sama",
-});
-type SignUpFormType = z.infer<typeof SignUpSchema>;
+const FormSchema = RegisterMasyarakatSchema;
+type FormType = z.infer<typeof FormSchema>;
+
+const inputCls =
+  "border-border bg-secondary/50 focus:bg-background h-11 rounded-xl font-sans text-sm transition-colors";
+
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-foreground text-sm font-semibold">{label}</Label>
+      {children}
+      {error && <p className="text-destructive text-xs">{error}</p>}
+    </div>
+  );
+}
+
+function PasswordInput({
+  id,
+  placeholder,
+  ...props
+}: React.ComponentProps<typeof Input>) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <Input
+        {...props}
+        id={id}
+        type={show ? "text" : "password"}
+        placeholder={placeholder}
+        className={`${inputCls} pr-11`}
+      />
+      <button
+        type="button"
+        onClick={() => setShow((v) => !v)}
+        className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 transition-colors"
+        tabIndex={-1}
+        aria-label={show ? "Sembunyikan password" : "Tampilkan password"}
+      >
+        {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+      </button>
+    </div>
+  );
+}
 
 export default function SignUpForm() {
-  const [isVisible, setIsVisible] = useState(false);
   const [isPending, startTransition] = useTransition();
-
-  const { signUp } = useSignUp();
-  const { loaded } = useClerk();
+  const [ktpFile, setKtpFile] = useState<File | null>(null);
+  const { signIn, setActive } = useSignIn();
   const router = useRouter();
 
-  const form = useForm<SignUpFormType>({
-    resolver: zodResolver(SignUpSchema),
-    mode: "onChange",
+  const form = useForm<FormType>({
+    resolver: zodResolver(FormSchema),
     defaultValues: {
-      name: "",
-      username: "",
+      nik: "",
       password: "",
       confirmPassword: "",
-      phoneNumber: "",
+      name: "",
       address: "",
-      role: "USER",
+      gender: "LAKI_LAKI",
+      phone: "",
+      email: "",
     },
+    mode: "onChange",
   });
 
-  async function onSubmit(values: SignUpFormType) {
-    startTransition(async () => {
-      if (!loaded || !signUp) return;
+  async function onSubmit(values: FormType) {
+    if (!ktpFile) {
+      toast.error("Upload foto KTP terlebih dahulu");
+      return;
+    }
 
+    startTransition(async () => {
       try {
-        const { error } = await signUp.create({
-          username: values.username,
+        const fd = new FormData();
+        fd.append("file", ktpFile);
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json();
+          throw new Error(err.error ?? "Upload KTP gagal");
+        }
+        const { url: ktpImageUrl } = await uploadRes.json();
+
+        const { registerMasyarakat } = await import("@/app/action/auth.action");
+        await registerMasyarakat({ ...values, ktpImageUrl });
+
+        const result = await signIn?.create({
+          identifier: values.nik,
           password: values.password,
         });
-
-        if (error) {
-          toast.error(error?.message || "Kombinasi salah");
-          console.error(error);
-          return;
+        if (result?.status === "complete") {
+          await setActive?.({ session: result.createdSessionId });
         }
 
-        if (signUp.status === "complete") {
-          await createUser({
-            username: values.username,
-            name: values.name,
-            role: "USER",
-            phoneNumber: values.phoneNumber || null,
-            address: values.address || null,
-          });
-          toast.success("Akun berhasil dibuat 🎉");
-          router.push("/");
-        }
+        toast.success("Pendaftaran berhasil! Menunggu verifikasi admin.");
+        router.push("/waiting");
       } catch (err: any) {
-        console.error(err);
-
-        const message =
-          err?.errors?.[0]?.message || "Terjadi kesalahan saat daftar";
-
-        if (message.toLowerCase().includes("username")) {
-          toast.error("Username sudah digunakan");
-        } else {
-          toast.error(message);
-        }
+        const msg = err?.errors?.[0]?.message ?? err?.message ?? "Terjadi kesalahan";
+        toast.error(msg.toLowerCase().includes("username") ? "NIK sudah terdaftar" : msg);
       }
     });
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 w-full">
-      <FieldGroup>
-        <div className="space-y-3">
-          {/* NAME */}
-          <Controller
-            control={form.control}
-            name="name"
-            render={({ field, fieldState }) => (
-              <Field>
-                <InputGroup className="h-12">
-                  <InputGroupInput
-                    {...field}
-                    placeholder="Nama Lengkap"
-                    className="ml-2"
-                  />
-                  <InputGroupAddon>
-                    <IdCard size={18} />
-                  </InputGroupAddon>
-                </InputGroup>
-                {fieldState.error && (
-                  <p className="text-destructive text-sm">
-                    {fieldState.error.message}
-                  </p>
-                )}
-              </Field>
-            )}
-          />
+    <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-4">
+      {/* Row 1 — Nama + NIK */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Controller
+          name="name"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field label="Nama Lengkap" error={fieldState.error?.message}>
+              <Input {...field} placeholder="Nama sesuai KTP" className={inputCls} />
+            </Field>
+          )}
+        />
+        <Controller
+          name="nik"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field label="NIK" error={fieldState.error?.message}>
+              <Input
+                {...field}
+                placeholder="16 digit NIK"
+                maxLength={16}
+                inputMode="numeric"
+                className={inputCls}
+              />
+            </Field>
+          )}
+        />
+      </div>
 
-          {/* USERNAME */}
-          <Controller
-            control={form.control}
-            name="username"
-            render={({ field, fieldState }) => (
-              <Field>
-                <InputGroup className="h-12">
-                  <InputGroupInput
-                    {...field}
-                    value={field.value || ""}
-                    onChange={(e) =>
-                      field.onChange(e.target.value.toLowerCase())
-                    }
-                    placeholder="Username"
-                    className="ml-2 lowercase"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                  />
-                  <InputGroupAddon>
-                    <User size={18} />
-                  </InputGroupAddon>
-                </InputGroup>
+      {/* Row 2 — Gender + Phone */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Controller
+          name="gender"
+          control={form.control}
+          render={({ field }) => (
+            <Field label="Jenis Kelamin">
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className={inputCls}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LAKI_LAKI">Laki-laki</SelectItem>
+                  <SelectItem value="PEREMPUAN">Perempuan</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        />
+        <Controller
+          name="phone"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field label="Nomor HP" error={fieldState.error?.message}>
+              <Input
+                {...field}
+                placeholder="08xxxxxxxxxx"
+                inputMode="tel"
+                className={inputCls}
+              />
+            </Field>
+          )}
+        />
+      </div>
 
-                {fieldState.error && (
-                  <p className="text-destructive text-sm">
-                    {fieldState.error.message}
-                  </p>
-                )}
-              </Field>
-            )}
-          />
+      {/* Row 3 — Email */}
+      <Controller
+        name="email"
+        control={form.control}
+        render={({ field, fieldState }) => (
+          <Field label="Email" error={fieldState.error?.message}>
+            <Input
+              {...field}
+              type="email"
+              placeholder="email@contoh.com"
+              className={inputCls}
+            />
+          </Field>
+        )}
+      />
 
-          {/* PASSWORD */}
-          <Controller
-            control={form.control}
-            name="password"
-            render={({ field, fieldState }) => (
-              <Field>
-                <InputGroup className="h-12">
-                  <InputGroupAddon>
-                    <Lock size={18} />
-                  </InputGroupAddon>
+      {/* Row 4 — Address */}
+      <Controller
+        name="address"
+        control={form.control}
+        render={({ field, fieldState }) => (
+          <Field label="Alamat" error={fieldState.error?.message}>
+            <Input {...field} placeholder="Alamat lengkap" className={inputCls} />
+          </Field>
+        )}
+      />
 
-                  <InputGroupInput
-                    {...field}
-                    type={isVisible ? "text" : "password"}
-                    placeholder="Password"
-                    className="ml-2"
-                  />
-
-                  <InputGroupAddon
-                    align="inline-end"
-                    className="cursor-pointer"
-                    onClick={() => setIsVisible(!isVisible)}
-                  >
-                    {isVisible ? <Eye size={18} /> : <EyeClosed size={18} />}
-                  </InputGroupAddon>
-                </InputGroup>
-
-                {fieldState.error && (
-                  <p className="text-destructive text-sm">
-                    {fieldState.error.message}
-                  </p>
-                )}
-              </Field>
-            )}
-          />
-
-          {/* CONFIRM PASSWORD */}
-          <Controller
-            control={form.control}
-            name="confirmPassword"
-            render={({ field, fieldState }) => (
-              <Field>
-                <InputGroup className="h-12">
-                  <InputGroupAddon>
-                    <Lock size={18} />
-                  </InputGroupAddon>
-
-                  <InputGroupInput
-                    {...field}
-                    type={isVisible ? "text" : "password"}
-                    placeholder="Konfirmasi Password"
-                    className="ml-2"
-                  />
-
-                  <InputGroupAddon
-                    align="inline-end"
-                    className="cursor-pointer"
-                    onClick={() => setIsVisible(!isVisible)}
-                  >
-                    {isVisible ? <Eye size={18} /> : <EyeClosed size={18} />}
-                  </InputGroupAddon>
-                </InputGroup>
-
-                {fieldState.error && (
-                  <p className="text-destructive text-sm">
-                    {fieldState.error.message}
-                  </p>
-                )}
-              </Field>
-            )}
-          />
-
-          {/* PHONE */}
-          <Controller
-            control={form.control}
-            name="phoneNumber"
-            render={({ field, fieldState }) => (
-              <Field>
-                <InputGroup className="h-12">
-                  <InputGroupInput
-                    {...field}
-                    placeholder="Nomor HP"
-                    className="ml-2"
-                  />
-                  <InputGroupAddon>
-                    <Phone size={18} />
-                  </InputGroupAddon>
-                </InputGroup>
-                {fieldState.error && (
-                  <p className="text-destructive text-sm">
-                    {fieldState.error.message}
-                  </p>
-                )}
-              </Field>
-            )}
-          />
-
-          {/* ADDRESS */}
-          <Controller
-            control={form.control}
-            name="address"
-            render={({ field, fieldState }) => (
-              <Field>
-                <InputGroup className="h-12">
-                  <InputGroupInput
-                    {...field}
-                    placeholder="Alamat"
-                    className="ml-2"
-                  />
-                  <InputGroupAddon>
-                    <MapPin size={18} />
-                  </InputGroupAddon>
-                </InputGroup>
-                {fieldState.error && (
-                  <p className="text-destructive text-sm">
-                    {fieldState.error.message}
-                  </p>
-                )}
-              </Field>
-            )}
-          />
-        </div>
-
-        {/* SUBMIT */}
-        <Button
-          type="submit"
-          disabled={isPending || !loaded || !form.formState.isValid}
-          className="h-12 w-full cursor-pointer text-base font-semibold tracking-wide"
+      {/* Row 5 — KTP Upload */}
+      <div className="space-y-1.5">
+        <Label className="text-foreground text-sm font-semibold">Foto KTP</Label>
+        <label
+          className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed py-5 transition-colors ${
+            ktpFile
+              ? "border-primary/50 bg-primary/5"
+              : "border-border bg-secondary/50 hover:bg-secondary/80"
+          }`}
         >
-          {isPending ? <Spinner /> : "Daftar"}
-        </Button>
-        {/* CAPTCHA (optional Clerk) */}
-        <div id="clerk-captcha" />
-      </FieldGroup>
+          {ktpFile ? (
+            <>
+              <CheckCircle2 className="text-primary size-5" />
+              <span className="text-foreground max-w-60 truncate text-center text-sm font-medium">
+                {ktpFile.name}
+              </span>
+              <span className="text-muted-foreground text-xs">Klik untuk ganti</span>
+            </>
+          ) : (
+            <>
+              <UploadCloud className="text-muted-foreground size-5" />
+              <span className="text-muted-foreground text-sm">Klik untuk upload foto KTP</span>
+              <span className="text-muted-foreground/70 text-xs">Maks 5MB · JPG / PNG / WebP</span>
+            </>
+          )}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => setKtpFile(e.target.files?.[0] ?? null)}
+          />
+        </label>
+      </div>
+
+      {/* Row 6 — Password + Confirm */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Controller
+          name="password"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field label="Password" error={fieldState.error?.message}>
+              <PasswordInput {...field} placeholder="Min. 8 karakter" />
+            </Field>
+          )}
+        />
+        <Controller
+          name="confirmPassword"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field label="Konfirmasi Password" error={fieldState.error?.message}>
+              <PasswordInput {...field} placeholder="Ulangi password" />
+            </Field>
+          )}
+        />
+      </div>
+
+      <Button
+        type="submit"
+        disabled={isPending || !form.formState.isValid || !ktpFile}
+        className="mt-1 h-11 w-full rounded-xl font-sans text-sm font-bold transition-all active:scale-95"
+      >
+        {isPending ? <Spinner /> : "Daftar Sekarang"}
+      </Button>
     </form>
   );
 }

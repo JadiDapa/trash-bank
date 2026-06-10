@@ -1,0 +1,6 @@
+model Settings {
+  id                   Int      @id @default(1)
+  grammageToPointRate  Float    @default(100)
+  pointsToVoucherRate  Float    @default(25000)
+  updatedAt            DateTime @updatedAt
+}

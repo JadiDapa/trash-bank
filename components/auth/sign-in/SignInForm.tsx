@@ -1,31 +1,25 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useClerk, useSignIn } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { Eye, EyeClosed, Lock, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Field, FieldGroup } from "@/components/ui/field";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import { Spinner } from "@/components/ui/spinner";
 import { z } from "zod";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Email tidak boleh kosong"),
+  username: z.string().min(1, "NIK tidak boleh kosong"),
   password: z.string().min(1, "Password tidak boleh kosong"),
 });
 
 type LoginFormType = z.infer<typeof loginSchema>;
 
 export default function SignInForm() {
-  const [isVisible, setIsVisible] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { signIn } = useSignIn();
   const { setActive, loaded } = useClerk();
@@ -39,104 +33,98 @@ export default function SignInForm() {
   async function onSubmit(values: LoginFormType) {
     startTransition(async () => {
       if (!loaded) return;
-
       try {
-        const { error } = await signIn.password({
+        const result = await signIn!.create({
           identifier: values.username,
           password: values.password,
         });
-
-        if (error) {
-          toast.error(error?.message || "Kombinasi salah");
-          console.error(error);
-          return;
+        if (result.status === "complete") {
+          await setActive({ session: result.createdSessionId });
+          router.push("/");
+        } else {
+          toast.error("Login gagal. Coba lagi.");
         }
-
-        if (signIn.status === "complete") {
-          await signIn.finalize({
-            navigate: ({ session, decorateUrl }) => {
-              const url = decorateUrl("/");
-              router.push(url);
-            },
-          });
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error("Login gagal");
+      } catch {
+        toast.error("Kombinasi NIK/password salah");
       }
     });
   }
 
   return (
-    <form
-      onSubmit={form.handleSubmit(onSubmit)}
-      className="mt-4 w-full lg:mt-6"
-    >
-      <FieldGroup>
-        <div className="space-y-4">
-          <Controller
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <Field>
-                <InputGroup className="h-12">
-                  <InputGroupInput
-                    {...field}
-                    value={field.value || ""}
-                    onChange={(e) =>
-                      field.onChange(e.target.value.toLowerCase())
-                    }
-                    placeholder="Username"
-                    className="ml-2 lowercase"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                  />
-                  <InputGroupAddon>
-                    <User />
-                  </InputGroupAddon>
-                </InputGroup>
-              </Field>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-4">
+      {/* NIK */}
+      <Controller
+        name="username"
+        control={form.control}
+        render={({ field, fieldState }) => (
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="nik"
+              className="text-foreground text-sm font-semibold"
+            >
+              NIK
+            </Label>
+            <Input
+              {...field}
+              id="nik"
+              placeholder="Masukkan 16 digit NIK Anda"
+              inputMode="numeric"
+              maxLength={16}
+              className="border-border bg-secondary/50 focus:bg-background h-11 rounded-xl font-sans text-sm transition-colors"
+            />
+            {fieldState.error && (
+              <p className="text-destructive text-xs">
+                {fieldState.error.message}
+              </p>
             )}
-          />
+          </div>
+        )}
+      />
 
-          <Controller
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <Field>
-                <InputGroup className="h-12">
-                  <InputGroupAddon>
-                    <Lock />
-                  </InputGroupAddon>
-                  <InputGroupInput
-                    {...field}
-                    className="ml-2"
-                    type={isVisible ? "text" : "password"}
-                    placeholder="Password"
-                    autoComplete="off"
-                  />
-                  <InputGroupAddon
-                    align="inline-end"
-                    className="cursor-pointer"
-                    onClick={() => setIsVisible(!isVisible)}
-                  >
-                    {isVisible ? <Eye /> : <EyeClosed />}
-                  </InputGroupAddon>
-                </InputGroup>
-              </Field>
+      {/* Password */}
+      <Controller
+        name="password"
+        control={form.control}
+        render={({ field, fieldState }) => (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="password"
+                className="text-foreground text-sm font-semibold"
+              >
+                Password
+              </Label>
+              <a
+                href="#"
+                className="text-primary hover:text-primary/80 text-xs font-semibold transition-colors"
+              >
+                Lupa password?
+              </a>
+            </div>
+            <Input
+              {...field}
+              id="password"
+              type="password"
+              placeholder="Password Anda"
+              className="border-border bg-secondary/50 focus:bg-background h-11 rounded-xl font-sans text-sm transition-colors"
+            />
+            {fieldState.error && (
+              <p className="text-destructive text-xs">
+                {fieldState.error.message}
+              </p>
             )}
-          />
-        </div>
+          </div>
+        )}
+      />
 
-        <Button
-          type="submit"
-          disabled={isPending || !loaded}
-          className="flex h-10 w-full items-center gap-3 text-lg lg:h-12"
-        >
-          {isPending ? <Spinner /> : "Masuk"}
-        </Button>
-      </FieldGroup>
+      {/* Submit */}
+      <Button
+        type="submit"
+        disabled={isPending || !loaded}
+        className="mt-1 h-11 w-full rounded-xl font-sans text-sm font-bold transition-all active:scale-95"
+      >
+        {isPending ? <Spinner /> : "Masuk"}
+      </Button>
     </form>
   );
 }

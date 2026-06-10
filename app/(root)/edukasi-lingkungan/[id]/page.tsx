@@ -1,75 +1,43 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Calendar, ChevronLeft } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
 import { EducationService } from "@/servers/services/education.service";
-import { format } from "date-fns";
+import Image from "next/image";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+import { notFound } from "next/navigation";
 
-export default async function EducationDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function EdukasiDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const education = await EducationService.getById(Number(id));
-
-  if (!education) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-muted-foreground">Edukasi tidak ditemukan</p>
-      </div>
-    );
-  }
+  if (!education) notFound();
 
   return (
-    <ScrollArea className="bg-background h-screen w-full md:rounded-2xl md:border">
-      <div className="w-full">
-        {/* HEADER */}
-        <div className="bg-primary flex items-center gap-4 px-3 pt-6 pb-3">
-          <Link href="/edukasi-lingkungan">
-            <ChevronLeft className="size-5" />
-          </Link>
-          <h1 className="font-medium">Edukasi</h1>
-        </div>
-
-        {/* CONTENT */}
-        <div className="mx-auto max-w-md space-y-4 p-4">
-          {/* IMAGE */}
-          {education.imageUrl && (
-            <div className="relative h-52 w-full overflow-hidden rounded-xl">
-              <Image
-                src={education.imageUrl}
-                alt={education.title}
-                fill
-                className="object-cover"
-              />
-            </div>
+    <main className="bg-background min-h-screen w-full">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm px-4 py-3 flex items-center gap-3 border-b">
+        <Link href="/edukasi-lingkungan">
+          <ChevronLeft className="size-5" />
+        </Link>
+        <h1 className="font-semibold line-clamp-1">{education.title}</h1>
+      </div>
+      <div className="space-y-4 pb-8">
+        {education.imageUrl && (
+          <div className="relative aspect-video w-full overflow-hidden">
+            <Image
+              src={education.imageUrl}
+              alt={education.title}
+              fill
+              className="object-cover"
+            />
+          </div>
+        )}
+        <div className="px-4 space-y-3">
+          <h2 className="text-xl font-bold">{education.title}</h2>
+          {education.description && (
+            <div
+              className="prose-content text-muted-foreground"
+              dangerouslySetInnerHTML={{ __html: education.description }}
+            />
           )}
-
-          {/* TITLE */}
-          <h1 className="text-xl leading-tight font-semibold">
-            {education.title}
-          </h1>
-
-          {/* DATE */}
-          <div className="flex items-center gap-2">
-            <Calendar className="size-5" />
-            <p className="text-muted-foreground text-xs">
-              {format(new Date(education.createdAt), "dd MMM yyyy")}
-            </p>
-          </div>
-
-          {/* DIVIDER */}
-          <div className="bg-muted h-px w-full" />
-
-          {/* DESCRIPTION */}
-          <div className="prose prose-sm text-foreground max-w-none">
-            <p className="text-sm leading-relaxed whitespace-pre-line">
-              {education.description || "Tidak ada deskripsi"}
-            </p>
-          </div>
         </div>
       </div>
-    </ScrollArea>
+    </main>
   );
 }

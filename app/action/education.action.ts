@@ -1,38 +1,37 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import z from "zod";
-import {
-  CreateEducationSchema,
-  UpdateEducationSchema,
-} from "@/servers/validators/education.validator";
 import { EducationService } from "@/servers/services/education.service";
+import { CreateEducationSchema, UpdateEducationSchema } from "@/servers/validators/education.validator";
+import { requireSuperAdmin } from "./auth.action";
 
-export async function createEducation(
-  input: z.input<typeof CreateEducationSchema>,
-) {
-  const data = CreateEducationSchema.parse({
-    title: input.title,
-    description: input.description,
-    imageUrl: input.imageUrl,
-    userId: input.userId,
-  });
-
+export async function createEducation(input: {
+  title: string;
+  description: string;
+  imageUrl?: string;
+}) {
+  const user = await requireSuperAdmin();
+  const data = CreateEducationSchema.parse({ ...input, userId: user.id });
   await EducationService.create(data);
-
-  revalidatePath("/documentation");
+  revalidatePath("/super-admin/edukasi");
+  revalidatePath("/edukasi-lingkungan");
 }
 
 export async function updateEducation(
   id: number,
-  input: z.input<typeof UpdateEducationSchema>,
+  input: { title?: string; description?: string; imageUrl?: string },
 ) {
+  await requireSuperAdmin();
   const data = UpdateEducationSchema.parse(input);
+  await EducationService.update(id, data);
+  revalidatePath("/super-admin/edukasi");
+  revalidatePath("/edukasi-lingkungan");
+  revalidatePath(`/edukasi-lingkungan/${id}`);
+}
 
-  await EducationService.update(id, {
-    ...data,
-  });
-
-  revalidatePath("/documentation/" + id);
-  revalidatePath("/documentation");
+export async function deleteEducation(id: number) {
+  await requireSuperAdmin();
+  await EducationService.delete(id);
+  revalidatePath("/super-admin/edukasi");
+  revalidatePath("/edukasi-lingkungan");
 }

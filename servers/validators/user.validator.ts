@@ -1,30 +1,9 @@
-import { Prisma, UserRole } from "@/generated/prisma";
 import { z } from "zod";
+import { UserRole } from "@/generated/prisma";
 
-export type UserType = Prisma.UserGetPayload<{
-  include: {
-    deposit: true;
-    pointExchange: true;
-  };
-}>;
-
-export const UserSearchSchema = z.object({
-  page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(100).default(20),
-  search: z.string().min(1).max(50).optional(),
-});
-
-const UserBaseSchema = z.object({
-  name: z.string().min(1),
-  username: z.string().min(1),
+export const CreateUserSchema = z.object({
+  clerkId: z.string().min(1),
   role: z.enum(UserRole),
-  phoneNumber: z.string().optional(),
-  address: z.string().optional(),
 });
-
-export const CreateUserSchema = UserBaseSchema;
-
-export const UpdateUserSchema = UserBaseSchema.partial();
 
 export type CreateUserDTO = z.infer<typeof CreateUserSchema>;
-export type UpdateUserDTO = z.infer<typeof UpdateUserSchema>;

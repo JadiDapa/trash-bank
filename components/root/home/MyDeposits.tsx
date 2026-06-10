@@ -2,7 +2,7 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { Card } from "@/components/ui/card";
-import { DepositType } from "@/servers/validators/deposit.validator";
+import { Deposit } from "@/generated/prisma";
 import { ChevronRight, Recycle } from "lucide-react";
 import Link from "next/link";
 
@@ -13,7 +13,7 @@ const trashStyles = {
   METAL: "bg-gray-200 text-gray-700",
 };
 
-export default function MyDeposits({ deposits }: { deposits: DepositType[] }) {
+export default function MyDeposits({ deposits }: { deposits: Deposit[] }) {
   return (
     <main className="mt-2 space-y-3 py-3">
       <div className="flex items-center justify-between">

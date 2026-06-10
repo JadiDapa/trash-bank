@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 export default function UserCard({ user }: { user: UserType }) {
   const initial = user.name?.charAt(0).toUpperCase() || "?";
-  const firstLetter = user?.name?.charAt(0).toUpperCase() || "U";
 
   return (
     <Dialog>
@@ -40,7 +39,7 @@ export default function UserCard({ user }: { user: UserType }) {
           <div className="flex items-center gap-4">
             {/* Avatar */}
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-xl font-bold backdrop-blur">
-              {firstLetter}
+              {initial}
             </div>
 
             {/* Name + Role */}

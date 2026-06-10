@@ -1,0 +1,20 @@
+model DepositTicket {
+  id                 Int                 @id @default(autoincrement())
+  masyarakatId       Int
+  adminId            Int
+  status             DepositTicketStatus @default(PENDING)
+  estimatedGrammage  Float
+  actualGrammage     Float?
+  pointsEarned       Float?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  masyarakat         Masyarakat          @relation(fields: [masyarakatId], references: [id])
+  admin              Admin               @relation(fields: [adminId], references: [id])
+}
+
+enum DepositTicketStatus {
+  PENDING
+  COMPLETED
+  REJECTED
+  CANCELLED
+}

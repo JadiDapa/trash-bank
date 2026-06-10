@@ -4,8 +4,8 @@ import ExchangePointCard from "@/components/root/history/ExchangePointCard";
 import { PointExchangeService } from "@/servers/services/point-exchange.service";
 
 export default async function ExchangeHistoryPage() {
-  const exchanges = await PointExchangeService.getAll();
   const user = await getCurrentUser();
+  const exchanges = await PointExchangeService.getByUserId(user.id);
   return (
     <main className="bg-card min-h-screen w-full space-y-8 p-4 md:rounded-2xl md:border lg:p-6">
       <h1 className="text-center text-3xl font-semibold">RIWAYAT TRANSAKSI</h1>
