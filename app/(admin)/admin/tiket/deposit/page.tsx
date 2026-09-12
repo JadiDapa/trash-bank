@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/app/action/auth.action";
+import { getCurrentAdmin } from "@/app/action/auth.action";
 import { DepositTicketService } from "@/servers/services/deposit-ticket.service";
 import AdminDepositTicketList from "@/components/root/admin/AdminDepositTicketList";
 import QRScanDialog from "@/components/root/admin/QRScanDialog";
@@ -8,8 +8,7 @@ import PageStats from "@/components/root/PageStats";
 import { Trash2, Clock, CheckCircle } from "lucide-react";
 
 export default async function AdminDepositTicketPage() {
-  const user = await getCurrentUser();
-  const admin = user.admin!;
+  const admin = await getCurrentAdmin();
 
   const tickets = await DepositTicketService.getByAdminId(admin.id);
 

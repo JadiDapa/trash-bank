@@ -1,12 +1,14 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useClerk, useSignIn } from "@clerk/nextjs";
+import { useSignIn } from "@clerk/nextjs/legacy";
+import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,8 +23,8 @@ type LoginFormType = z.infer<typeof loginSchema>;
 
 export default function SignInForm() {
   const [isPending, startTransition] = useTransition();
-  const { signIn } = useSignIn();
-  const { setActive, loaded } = useClerk();
+  const [showPassword, setShowPassword] = useState(false);
+  const { isLoaded, signIn, setActive } = useSignIn();
   const router = useRouter();
 
   const form = useForm<LoginFormType>({
@@ -32,19 +34,31 @@ export default function SignInForm() {
 
   async function onSubmit(values: LoginFormType) {
     startTransition(async () => {
-      if (!loaded) return;
+      if (!isLoaded) return;
       try {
-        const result = await signIn!.create({
+        const result = await signIn.create({
           identifier: values.username,
           password: values.password,
         });
         if (result.status === "complete") {
           await setActive({ session: result.createdSessionId });
           router.push("/");
+          router.refresh();
         } else {
           toast.error("Login gagal. Coba lagi.");
         }
-      } catch {
+      } catch (err) {
+        // Session already exists means the user is already signed in
+        // (e.g. a previous attempt created the session but this browser
+        // never activated it) — just send them onward instead of erroring.
+        if (
+          isClerkAPIResponseError(err) &&
+          err.errors.some((e) => e.code === "session_exists")
+        ) {
+          router.push("/");
+          router.refresh();
+          return;
+        }
         toast.error("Kombinasi NIK/password salah");
       }
     });
@@ -101,13 +115,30 @@ export default function SignInForm() {
                 Lupa password?
               </a>
             </div>
-            <Input
-              {...field}
-              id="password"
-              type="password"
-              placeholder="Password Anda"
-              className="border-border bg-secondary/50 focus:bg-background h-11 rounded-xl font-sans text-sm transition-colors"
-            />
+            <div className="relative">
+              <Input
+                {...field}
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password Anda"
+                className="border-border bg-secondary/50 focus:bg-background h-11 rounded-xl pe-11 font-sans text-sm transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                tabIndex={-1}
+                aria-label={
+                  showPassword ? "Sembunyikan password" : "Tampilkan password"
+                }
+                className="text-muted-foreground hover:text-foreground absolute inset-y-0 inset-e-0 flex w-11 items-center justify-center transition-colors"
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" />
+                ) : (
+                  <Eye className="size-4" />
+                )}
+              </button>
+            </div>
             {fieldState.error && (
               <p className="text-destructive text-xs">
                 {fieldState.error.message}
@@ -120,7 +151,7 @@ export default function SignInForm() {
       {/* Submit */}
       <Button
         type="submit"
-        disabled={isPending || !loaded}
+        disabled={isPending || !isLoaded}
         className="mt-1 h-11 w-full rounded-xl font-sans text-sm font-bold transition-all active:scale-95"
       >
         {isPending ? <Spinner /> : "Masuk"}

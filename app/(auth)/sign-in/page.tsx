@@ -10,8 +10,8 @@ export default async function SignInPage() {
 
   return (
     <main className="bg-muted flex min-h-screen w-full items-center justify-center p-4">
-      <div className="flex h-[96vh] w-full overflow-hidden rounded-2xl border shadow-2xl">
-        <section className="bg-card flex w-1/2 flex-col justify-center px-10 py-10">
+      <div className="flex w-full max-w-6xl flex-col overflow-hidden rounded-2xl border shadow-2xl md:h-[96vh] md:flex-row">
+        <section className="bg-card flex w-full flex-col justify-center px-6 py-10 sm:px-12 md:w-1/2 md:px-16 lg:px-28">
           {/* Mobile logo */}
           <div className="mb-7 flex items-center gap-2 md:hidden">
             <div className="bg-primary flex size-7 items-center justify-center rounded-lg">
@@ -29,7 +29,7 @@ export default async function SignInPage() {
                 <path d="M10 11v6M14 11v6" />
               </svg>
             </div>
-            <span className="text-card-foreground font-sans text-sm font-bold">
+            <span className="text-card-foreground font-semi font-sans text-lg">
               Trash Bank
             </span>
           </div>
@@ -37,7 +37,8 @@ export default async function SignInPage() {
           {/* Heading — font-bold (700), not black */}
           <div className="mb-7">
             <h1 className="text-card-foreground font-sans text-4xl leading-snug font-medium tracking-wide">
-              Selamat datang<span className="text-primary">.</span>
+              Selamat datang
+              <span className="text-primary font-semibold">!</span>
             </h1>
             <p className="text-muted-foreground mt-1.5 font-sans text-sm">
               Masuk untuk mengelola setoran dan poin Anda
@@ -74,7 +75,7 @@ export default async function SignInPage() {
         </section>
         <aside
           aria-hidden="true"
-          className="bg-card relative hidden w-1/2 shrink-0 flex-col overflow-hidden md:flex"
+          className="bg-card relative hidden shrink-0 flex-col overflow-hidden md:flex md:w-1/2"
         >
           <div className="relative z-10 flex flex-1 flex-col">
             <AuthCarousel />

@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/app/action/auth.action";
+import { getCurrentAdmin } from "@/app/action/auth.action";
 import { VoucherTicketService } from "@/servers/services/voucher-ticket.service";
 import AdminVoucherTicketList from "@/components/root/admin/AdminVoucherTicketList";
 import QRScanDialog from "@/components/root/admin/QRScanDialog";
@@ -8,8 +8,7 @@ import PageStats from "@/components/root/PageStats";
 import { Gift, Clock, CheckCircle } from "lucide-react";
 
 export default async function AdminVoucherTicketPage() {
-  const user = await getCurrentUser();
-  const admin = user.admin!;
+  const admin = await getCurrentAdmin();
 
   const tickets = await VoucherTicketService.getByAdminId(admin.id);
 

@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useSignIn } from "@clerk/nextjs";
+import { useSignIn } from "@clerk/nextjs/legacy";
+import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Controller, useForm } from "react-hook-form";
@@ -76,7 +77,7 @@ function PasswordInput({
 export default function SignUpForm() {
   const [isPending, startTransition] = useTransition();
   const [ktpFile, setKtpFile] = useState<File | null>(null);
-  const { signIn, setActive } = useSignIn();
+  const { isLoaded, signIn, setActive } = useSignIn();
   const router = useRouter();
 
   const form = useForm<FormType>({
@@ -101,6 +102,7 @@ export default function SignUpForm() {
     }
 
     startTransition(async () => {
+      if (!isLoaded) return;
       try {
         const fd = new FormData();
         fd.append("file", ktpFile);
@@ -114,19 +116,25 @@ export default function SignUpForm() {
         const { registerMasyarakat } = await import("@/app/action/auth.action");
         await registerMasyarakat({ ...values, ktpImageUrl });
 
-        const result = await signIn?.create({
+        const result = await signIn.create({
           identifier: values.nik,
           password: values.password,
         });
-        if (result?.status === "complete") {
-          await setActive?.({ session: result.createdSessionId });
+        if (result.status === "complete") {
+          await setActive({ session: result.createdSessionId });
         }
 
         toast.success("Pendaftaran berhasil! Menunggu verifikasi admin.");
         router.push("/waiting");
-      } catch (err: any) {
-        const msg = err?.errors?.[0]?.message ?? err?.message ?? "Terjadi kesalahan";
-        toast.error(msg.toLowerCase().includes("username") ? "NIK sudah terdaftar" : msg);
+      } catch (err) {
+        const msg = isClerkAPIResponseError(err)
+          ? err.errors[0]?.message
+          : err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan";
+        toast.error(
+          msg.toLowerCase().includes("username") ? "NIK sudah terdaftar" : msg,
+        );
       }
     });
   }

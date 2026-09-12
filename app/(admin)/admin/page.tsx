@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/app/action/auth.action";
+import { getCurrentAdmin } from "@/app/action/auth.action";
 import { DepositTicketService } from "@/servers/services/deposit-ticket.service";
 import { VoucherTicketService } from "@/servers/services/voucher-ticket.service";
 import AdminDashboard from "@/components/root/admin/AdminDashboard";
@@ -8,8 +8,7 @@ import PageStats from "@/components/root/PageStats";
 import { Ticket, Clock, CheckCircle } from "lucide-react";
 
 export default async function AdminPage() {
-  const user = await getCurrentUser();
-  const admin = user.admin!;
+  const admin = await getCurrentAdmin();
 
   const [depositTickets, voucherTickets] = await Promise.all([
     DepositTicketService.getByAdminId(admin.id),

@@ -5,21 +5,18 @@ import { useEffect, useRef, useState } from "react";
 
 const slides = [
   {
-    tag: "Deposit Sampah",
     title: "Tukar Sampah\nJadi Poin",
-    body: "Setor sampah anorganik seperti plastik, kertas, kaca, dan logam. Setiap gram dihargai — poin langsung masuk ke akun Anda.",
+    body: "Setor sampah anorganik seperti plastik, kertas, kaca, dan logam. Setiap gram dihargai. Poin langsung masuk ke akun Anda.",
     image:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT7N2_rC5J8hePiGgb_W8lw-e77qvb227znroXWLR1q5g&s=10",
   },
   {
-    tag: "Tukar Voucher",
     title: "Poin Jadi\nHadiah Nyata",
     body: "Kumpulkan poin dari setiap setoran dan tukarkan dengan voucher menarik. Semakin banyak sampah, semakin besar reward Anda.",
     image:
       "https://rricoid-assets.obs.ap-southeast-4.myhuaweicloud.com/berita/Bandung/o/1730269359729-IMG-20241030-WA0114/q9pjsmlj0v6wni6.jpeg",
   },
   {
-    tag: "Edukasi Lingkungan",
     title: "Belajar Demi\nBumi Lebih Baik",
     body: "Akses konten edukasi pilihan tentang pengelolaan sampah dan lingkungan. Pengetahuan kecil bisa mengubah kebiasaan besar.",
     image: "https://lp2m.uingusdur.ac.id/wp-content/uploads/hh.jpg",
@@ -85,15 +82,11 @@ export default function AuthCarousel() {
             transform: fading ? "translateY(10px)" : "translateY(0)",
           }}
         >
-          <span className="mb-3 inline-block w-fit rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold tracking-widest text-white uppercase backdrop-blur-sm">
-            {slide.tag}
-          </span>
-
-          <h2 className="mb-3 text-3xl leading-tight font-bold whitespace-pre-line text-white">
+          <h2 className="mb-3 text-4xl leading-tight font-medium whitespace-pre-line text-white">
             {slide.title}
           </h2>
 
-          <p className="max-w-sm text-sm leading-relaxed text-white/90">
+          <p className="max-w-lg text-sm leading-relaxed text-white/90">
             {slide.body}
           </p>
         </div>

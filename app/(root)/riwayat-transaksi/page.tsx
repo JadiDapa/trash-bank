@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/app/action/auth.action";
+import { getCurrentMasyarakat } from "@/app/action/auth.action";
 import { DepositTicketService } from "@/servers/services/deposit-ticket.service";
 import { VoucherTicketService } from "@/servers/services/voucher-ticket.service";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,8 +22,7 @@ const voucherStatusLabel: Record<string, { label: string; variant: "outline" | "
 };
 
 export default async function TransactionHistoryPage() {
-  const user = await getCurrentUser();
-  const masyarakat = user.masyarakat!;
+  const masyarakat = await getCurrentMasyarakat();
 
   const [depositTickets, voucherTickets] = await Promise.all([
     DepositTicketService.getByMasyarakatId(masyarakat.id),
